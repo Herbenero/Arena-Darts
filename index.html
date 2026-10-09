@@ -355,5 +355,158 @@
       </div>
     </div>
   </div>
+  <script>
+    let players = [];
+    let currentPlayerIndex = 0;
+    let dartsThrown = 0;
+    let history = [];
+    let boardType = 'basic';
+
+    function addPlayerInput() {
+      const container = document.getElementById('player-inputs');
+      const count = container.children.length + 1;
+      const row = document.createElement('div');
+      row.className = 'player-input-row';
+      row.innerHTML = `
+        <input type="text" placeholder="Player ${count} Name" class="p-name" value="Player ${count}">
+        <input type="number" placeholder="Target #" class="p-target" min="1" max="20" value="${21 - count > 0 ? 21 - count : 20}">
+      `;
+      container.appendChild(row);
+    }
+
+    function startGame() {
+      const nameInputs = document.querySelectorAll('.p-name');
+      const targetInputs = document.querySelectorAll('.p-target');
+      boardType = document.getElementById('board-type').value;
+
+      players = [];
+      nameInputs.forEach((input, index) => {
+        const name = input.value.trim() || `Player ${index + 1}`;
+        const target = parseInt(targetInputs[index].value, 10) || 20;
+        players.push({
+          id: index,
+          name: name,
+          target: target,
+          hp: 15,
+          shield: 0,
+          eliminated: false
+        });
+      });
+
+      if (players.length < 2) {
+        alert('Please add at least 2 players.');
+        return;
+      }
+
+      document.getElementById('setup-screen').classList.add('hidden');
+      document.getElementById('game-screen').classList.remove('hidden');
+
+      renderGame();
+    }
+
+    function renderGame() {
+      const grid = document.getElementById('players-grid');
+      grid.innerHTML = '';
+
+      players.forEach((player, index) => {
+        const card = document.createElement('div');
+        let cardClass = 'player-card';
+        if (index === currentPlayerIndex) cardClass += ' active-turn';
+        if (player.hp <= 5 && !player.eliminated) cardClass += ' low-hp';
+        if (player.eliminated) cardClass += ' eliminated';
+
+        card.className = cardClass;
+
+        const hasQuad = boardType === 'quad';
+        const actionsGridClass = hasQuad ? 'actions-grid has-quad' : 'actions-grid';
+
+        card.innerHTML = `
+          ${index === currentPlayerIndex ? '<span class="badge">ACTIVE</span>' : ''}
+          <h2>${player.name}</h2>
+          <div class="stats">
+            <span class="hp">HP: ${player.hp}</span>
+            <span class="shield">Shield: ${player.shield}</span>
+          </div>
+          <div class="target-num">Target: #${player.target}</div>
+          
+          <div class="${actionsGridClass}">
+            <button class="btn-action" onclick="hitTarget(${index}, 1)" ${player.eliminated ? 'disabled' : ''}>Single</button>
+            <button class="btn-action" onclick="hitTarget(${index}, 2)" ${player.eliminated ? 'disabled' : ''}>Double</button>
+            <button class="btn-action" onclick="hitTarget(${index}, 3)" ${player.eliminated ? 'disabled' : ''}>Triple</button>
+            ${hasQuad ? `<button class="btn-action" onclick="hitTarget(${index}, 4)" ${player.eliminated ? 'disabled' : ''}>Quad</button>` : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('turn-status').innerText = `Darts Thrown: ${dartsThrown} / 3`;
+    }
+
+    function registerThrow(type) {
+      if (dartsThrown >= 3) return;
+      saveState();
+
+      const activePlayer = players[currentPlayerIndex];
+
+      if (type === 'outer-bull') {
+        activePlayer.shield += 1;
+      } else if (type === 'dbull') {
+        activePlayer.shield += 3;
+      }
+
+      dartsThrown++;
+      renderGame();
+    }
+
+    function hitTarget(targetPlayerIndex, multiplier) {
+      if (dartsThrown >= 3) return;
+      saveState();
+
+      const targetPlayer = players[targetPlayerIndex];
+      let damage = multiplier;
+
+      if (targetPlayer.shield > 0) {
+        if (targetPlayer.shield >= damage) {
+          targetPlayer.shield -= damage;
+          damage = 0;
+        } else {
+          damage -= targetPlayer.shield;
+          targetPlayer.shield = 0;
+        }
+      }
+
+      targetPlayer.hp -= damage;
+      if (targetPlayer.hp <= 0) {
+        targetPlayer.hp = 0;
+        targetPlayer.eliminated = true;
+      }
+
+      dartsThrown++;
+      renderGame();
+    }
+
+    function nextTurn() {
+      saveState();
+      dartsThrown = 0;
+      do {
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+      } while (players[currentPlayerIndex].eliminated && players.some(p => !p.eliminated));
+
+      renderGame();
+    }
+
+    function saveState() {
+      history.push(JSON.stringify({ players, currentPlayerIndex, dartsThrown }));
+    }
+
+    function undoLastAction() {
+      if (history.length === 0) return;
+      const lastState = JSON.parse(history.pop());
+      players = lastState.players;
+      currentPlayerIndex = lastState.currentPlayerIndex;
+      dartsThrown = lastState.dartsThrown;
+      renderGame();
+    }
+  </script>
 </body>
 </html>
