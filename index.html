@@ -19,8 +19,20 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 1rem; min-height: 100vh; }
-    .container { max-width: 900px; margin: 0 auto; }
+    body {
+  background-image: url('goldrush.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  
+  /* Flexbox settings to center content vertically and horizontally */
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px; /* Optional padding for smaller screens */
+}
     
     h1, h2, h3 { text-align: center; margin-bottom: 1rem; }
     button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: all 0.2s; }
